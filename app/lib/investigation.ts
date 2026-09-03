@@ -1,4 +1,5 @@
 import { prisma } from "@/app/lib/prisma";
+import { createAIAction } from "./actions";
 import {
   investigateWithGroq,
   type AIInvestigation,
@@ -119,6 +120,15 @@ export async function investigateInvoice(
     recommendedAction: aiResult.recommendedAction,
     riskLevel: aiResult.riskLevel,
   },
+});
+
+await createAIAction({
+  organizationId: invoice.organizationId,
+  invoiceId: invoice.id,
+  type: "REMINDER",
+  riskLevel: aiResult.riskLevel,
+  reason: aiResult.finding,
+  recommendation: aiResult.recommendedAction,
 });
 
   const evidenceById = new Map(

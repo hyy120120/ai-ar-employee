@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/app/lib/prisma";
 import InvestigateButton from "./investigate-button";
 import EmailDraft from "./email-draft";
+import ActionReview from "./action-review";
 
 type InvoicePageProps = {
   params: Promise<{
@@ -78,6 +79,9 @@ export default async function InvoicePage({
     balanceDue > 0 ? getDaysOverdue(invoice.dueDate) : 0;
 
   const latestInvestigation = invoice.investigations[0];
+  const pendingAction = invoice.actions.find(
+  (action) => action.status === "PENDING",
+);
 
   return (
     <main className="invoice-page">
@@ -221,6 +225,16 @@ export default async function InvoicePage({
               </p>
             )}
           </section>
+
+               {pendingAction && (
+            <ActionReview
+              actionId={pendingAction.id}
+              type={pendingAction.type}
+              riskLevel={pendingAction.riskLevel}
+              reason={pendingAction.reason}
+              recommendation={pendingAction.recommendation}
+            />
+          )}
         </div>
 
 
