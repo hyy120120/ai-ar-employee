@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { prisma } from "@/app/lib/prisma";
+import InvestigateButton from "./investigate-button";
+import EmailDraft from "./email-draft";
 
 type InvoicePageProps = {
   params: Promise<{
@@ -56,6 +58,12 @@ export default async function InvoicePage({
           createdAt: "desc",
         },
       },
+
+      investigations: {
+       orderBy: {
+         createdAt: "desc",
+       },
+     },
     },
   });
 
@@ -69,7 +77,7 @@ export default async function InvoicePage({
   const daysOverdue =
     balanceDue > 0 ? getDaysOverdue(invoice.dueDate) : 0;
 
-  const latestAction = invoice.actions[0];
+  const latestInvestigation = invoice.investigations[0];
 
   return (
     <main className="invoice-page">
@@ -103,16 +111,19 @@ export default async function InvoicePage({
               </div>
             </div>
 
-            {latestAction ? (
+            {latestInvestigation ? (
               <>
                 <div className="finding">
                   <span className="finding-label">
                     Current finding
                   </span>
 
-                  <h3>{latestAction.type.replace("_", " ")}</h3>
+                  <h3>{latestInvestigation.finding}</h3>
 
-                  <p>{latestAction.reason}</p>
+                  <p>
+                    Confidence:{" "}
+                    {Math.round(Number(latestInvestigation.confidence) * 100)}%
+                  </p>
                 </div>
 
                 <div className="recommendation">
@@ -120,7 +131,7 @@ export default async function InvoicePage({
                     Recommended next action
                   </span>
 
-                  <p>{latestAction.recommendation}</p>
+                  <p>{latestInvestigation.recommendedAction}</p>
                 </div>
               </>
             ) : (
@@ -212,21 +223,22 @@ export default async function InvoicePage({
           </section>
         </div>
 
+
         <aside className="invoice-sidebar">
           <section className="action-card">
             <p className="eyebrow">NEXT ACTION</p>
 
-            {latestAction ? (
+            {latestInvestigation ? (
               <>
-                <h2>
-                  {latestAction.type.replace("_", " ")}
-                </h2>
+                <h2>AI recommended action</h2>
 
-                <p>{latestAction.recommendation}</p>
+                <p>{latestInvestigation.recommendedAction}</p>
 
-                <button type="button">
-                  Review AI draft
-                </button>
+                <p className="muted">
+                  Risk: {latestInvestigation.riskLevel}
+                </p>
+
+                <InvestigateButton invoiceId={invoice.id} />
               </>
             ) : (
               <>
@@ -250,6 +262,11 @@ export default async function InvoicePage({
           </section>
         </aside>
       </section>
+      
+      <EmailDraft
+        invoiceId={invoice.id}
+        customerEmail={invoice.customer.email ?? ""}
+      />
     </main>
   );
 }

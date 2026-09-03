@@ -108,6 +108,7 @@ model Invoice {
   payments       Payment[]
   actions        AIAction[]
   evidence       InvoiceEvidence[]
+ investigations InvoiceInvestigation[]
 
   @@unique([organizationId, invoiceNumber])
   @@index([organizationId])
@@ -189,4 +190,19 @@ model InvoiceEvidence {
 
   @@index([invoiceId])
   @@index([invoiceId, observedAt])
+}
+
+model InvoiceInvestigation {
+  id                String     @id @default(cuid())
+  invoiceId         String
+  finding           String
+  confidence        Decimal    @db.Decimal(5, 4)
+  recommendedAction String
+  riskLevel         RiskLevel
+  createdAt         DateTime   @default(now())
+
+  invoice           Invoice    @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@index([invoiceId, createdAt])
 }
