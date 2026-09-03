@@ -107,6 +107,7 @@ model Invoice {
   customer       Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
   payments       Payment[]
   actions        AIAction[]
+  evidence       InvoiceEvidence[]
 
   @@unique([organizationId, invoiceNumber])
   @@index([organizationId])
@@ -165,4 +166,27 @@ model AuditLog {
 
   @@index([organizationId, createdAt])
   @@index([entityType, entityId])
+}
+enum EvidenceType {
+  INVOICE
+  PAYMENT
+  EMAIL
+  NOTE
+  SYSTEM
+}
+
+model InvoiceEvidence {
+  id          String       @id @default(cuid())
+  invoiceId   String
+  type        EvidenceType
+  title       String
+  content     String
+  sourceId    String?
+  observedAt  DateTime
+  createdAt   DateTime     @default(now())
+
+  invoice     Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@index([invoiceId, observedAt])
 }
