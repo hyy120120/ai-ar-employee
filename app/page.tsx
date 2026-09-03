@@ -1,5 +1,7 @@
 import { getDashboardData } from "@/app/lib/dashboard";
 import Link from "next/link";
+import { prisma } from "@/app/lib/prisma";
+import GmailTestButton from "./gmail-test-button";
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat("en-US", {
@@ -22,6 +24,15 @@ export default async function Home() {
   const { organization, invoices, pendingActions, metrics } =
     await getDashboardData();
 
+    const googleConnection = await prisma.googleConnection.findUnique({
+  where: {
+    organizationId: organization.id,
+  },
+  select: {
+    email: true,
+  },
+});
+
   return (
     <main className="dashboard">
       <header className="dashboard-header">
@@ -32,6 +43,18 @@ export default async function Home() {
             {organization.name}
           </p>
         </div>
+
+        {googleConnection ? (
+          <div className="connection-status">
+            <strong>✓ Gmail Connected</strong>
+            <span>{googleConnection.email}</span>
+          </div>
+        ) : (
+          <a href="/api/auth/google" className="primary-button">
+            Connect Gmail
+          </a>
+        )}
+        {googleConnection && <GmailTestButton />}
       </header>
 
       <section className="metrics-grid">
@@ -92,10 +115,10 @@ export default async function Home() {
                     </td>
 
                     <td>
-  <Link href={`/invoices/${invoice.id}`}>
-    {invoice.invoiceNumber}
-  </Link>
-</td>
+                      <Link href={`/invoices/${invoice.id}`}>
+                        {invoice.invoiceNumber}
+                      </Link>
+                    </td>
 
                     <td>
                       {formatCurrency(Number(invoice.balanceDue))}

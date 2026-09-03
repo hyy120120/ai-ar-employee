@@ -5,6 +5,7 @@ import { useState } from "react";
 type EmailDraftProps = {
   invoiceId: string;
   customerEmail: string;
+  actionId?: string;
 };
 
 type Draft = {
@@ -15,14 +16,18 @@ type Draft = {
 export default function EmailDraft({
   invoiceId,
   customerEmail,
+  actionId,
 }: EmailDraftProps) {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   async function handleGenerateDraft() {
     setIsLoading(true);
     setError(null);
+    setSuccess(null);
 
     try {
       const response = await fetch(
@@ -54,6 +59,62 @@ export default function EmailDraft({
     }
   }
 
+  async function handleApproveAndSend() {
+    if (!draft) {
+      return;
+    }
+
+    if (!actionId) {
+      setError(
+        "No AI action is available for this invoice.",
+      );
+      return;
+    }
+
+    setIsSending(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const response = await fetch(
+        `/api/ai-actions/${actionId}/execute`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            subject: draft.subject,
+            body: draft.body,
+            customerEmail,
+          }),
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message ?? "Unable to send email.",
+        );
+      }
+
+      setSuccess(
+        `Email sent successfully to ${data.email ?? customerEmail}.`,
+      );
+    } catch (error) {
+      console.error("Email sending failed:", error);
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Unable to send email.",
+      );
+    } finally {
+      setIsSending(false);
+    }
+  }
+
   return (
     <section className="email-draft-card">
       <div className="email-draft-header">
@@ -77,6 +138,12 @@ export default function EmailDraft({
       {error && (
         <div className="email-draft-error">
           {error}
+        </div>
+      )}
+
+      {success && (
+        <div className="email-draft-success">
+          {success}
         </div>
       )}
 
@@ -105,7 +172,7 @@ export default function EmailDraft({
               type="button"
               className="secondary-button"
               onClick={handleGenerateDraft}
-              disabled={isLoading}
+              disabled={isLoading || isSending}
             >
               {isLoading ? "Regenerating..." : "Regenerate"}
             </button>
@@ -113,10 +180,10 @@ export default function EmailDraft({
             <button
               type="button"
               className="primary-button"
-              disabled
-              title="Email sending will be enabled after Gmail integration."
+              onClick={handleApproveAndSend}
+              disabled={isSending || !actionId}
             >
-              Approve & Send
+              {isSending ? "Sending..." : "Approve & Send"}
             </button>
           </div>
 

@@ -83,6 +83,12 @@ export default async function InvoicePage({
   (action) => action.status === "PENDING",
 );
 
+const emailAction =
+  pendingAction ??
+  invoice.actions.find(
+    (action) => action.status === "APPROVED",
+  );
+
   return (
     <main className="invoice-page">
       <header className="invoice-header">
@@ -280,6 +286,7 @@ export default async function InvoicePage({
       <EmailDraft
         invoiceId={invoice.id}
         customerEmail={invoice.customer.email ?? ""}
+        actionId={emailAction?.id}
       />
     </main>
   );
