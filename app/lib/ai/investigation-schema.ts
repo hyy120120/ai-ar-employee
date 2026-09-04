@@ -5,6 +5,18 @@ export const investigationJsonSchema = {
     finding: {
       type: "string",
     },
+    actionType: {
+  type: "string",
+  enum: [
+    "REMINDER",
+    "RESEND_INVOICE",
+    "PAYMENT_DATE_REQUEST",
+    "MISSING_PO",
+    "DISPUTE",
+    "PAYMENT_PROMISE",
+    "ESCALATE",
+  ],
+},
     confidence: {
       type: "number",
       minimum: 0,
@@ -26,6 +38,7 @@ export const investigationJsonSchema = {
   },
   required: [
     "finding",
+    "actionType",
     "confidence",
     "evidenceIds",
     "recommendedAction",

@@ -14,6 +14,15 @@ export type InvestigationResult = {
     content: string;
   }>;
   recommendedAction: string;
+  actionType:
+    | "REMINDER"
+    | "RESEND_INVOICE"
+    | "PAYMENT_DATE_REQUEST"
+    | "MISSING_PO"
+    | "DISPUTE"
+    | "PAYMENT_PROMISE"
+    | "ESCALATE"
+    | null;
   riskLevel: "LOW" | "MEDIUM" | "HIGH";
 };
 
@@ -64,6 +73,7 @@ export async function investigateInvoice(
       confidence: 1,
       evidence: [],
       recommendedAction: "No collection action required.",
+      actionType: null,
       riskLevel: "LOW",
     };
   }
@@ -76,6 +86,7 @@ export async function investigateInvoice(
       confidence: 1,
       evidence: [],
       recommendedAction: "Monitor until the due date.",
+      actionType: null,
       riskLevel: "LOW",
     };
   }
@@ -125,7 +136,7 @@ export async function investigateInvoice(
 await createAIAction({
   organizationId: invoice.organizationId,
   invoiceId: invoice.id,
-  type: "REMINDER",
+  type: aiResult.actionType,
   riskLevel: aiResult.riskLevel,
   reason: aiResult.finding,
   recommendation: aiResult.recommendedAction,
@@ -147,6 +158,7 @@ await createAIAction({
         content: item.content,
       })),
     recommendedAction: aiResult.recommendedAction,
+    actionType: aiResult.actionType,
     riskLevel: aiResult.riskLevel,
   };
 }
