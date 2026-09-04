@@ -169,3 +169,135 @@ export async function sendTestGmailEmail(
     body,
   });
 }
+
+type IncomingGmailMessage = {
+  id: string;
+  threadId: string;
+  from: string;
+  to: string;
+  subject: string;
+  date: string;
+  body: string;
+};
+
+function decodeGmailBody(data?: string | null): string {
+  if (!data) {
+    return "";
+  }
+
+  return Buffer.from(
+    data.replace(/-/g, "+").replace(/_/g, "/"),
+    "base64",
+  ).toString("utf8");
+}
+
+function extractGmailBody(
+  payload: {
+    body?: { data?: string | null } | null;
+    parts?: Array<{
+      mimeType?: string | null;
+      body?: { data?: string | null } | null;
+      parts?: Array<{
+        mimeType?: string | null;
+        body?: { data?: string | null } | null;
+      }>;
+    }>;
+  },
+): string {
+  if (payload.body?.data) {
+    return decodeGmailBody(payload.body.data);
+  }
+
+  for (const part of payload.parts ?? []) {
+    if (part.mimeType === "text/plain" && part.body?.data) {
+      return decodeGmailBody(part.body.data);
+    }
+
+    const nestedBody = part.parts
+      ? extractGmailBody({
+          body: part.body,
+          parts: part.parts,
+        })
+      : "";
+
+    if (nestedBody) {
+      return nestedBody;
+    }
+  }
+
+  return "";
+}
+
+export async function getRecentIncomingGmailMessages(
+  organizationId: string,
+): Promise<IncomingGmailMessage[]> {
+  const { gmail, oauth2Client, connection } =
+    await getGmailClient(organizationId);
+
+  const response = await gmail.users.messages.list({
+    userId: "me",
+    q: "in:inbox",
+    maxResults: 20,
+  });
+
+  const messageIds = response.data.messages ?? [];
+
+  const messages: IncomingGmailMessage[] = [];
+
+  for (const message of messageIds) {
+    if (!message.id) {
+      continue;
+    }
+
+    const result = await gmail.users.messages.get({
+      userId: "me",
+      id: message.id,
+      format: "full",
+    });
+
+    const payload = result.data.payload;
+
+    if (!payload) {
+      continue;
+    }
+
+    const headers = payload.headers ?? [];
+
+    const getHeader = (name: string) =>
+      headers.find(
+        (header) =>
+          header.name?.toLowerCase() === name.toLowerCase(),
+      )?.value ?? "";
+
+    messages.push({
+      id: result.data.id ?? message.id,
+      threadId: result.data.threadId ?? "",
+      from: getHeader("From"),
+      to: getHeader("To"),
+      subject: getHeader("Subject"),
+      date: getHeader("Date"),
+      body: extractGmailBody(payload),
+    });
+  }
+
+  const refreshedCredentials = oauth2Client.credentials;
+
+  if (
+    refreshedCredentials.access_token &&
+    refreshedCredentials.access_token !== connection.accessToken
+  ) {
+    await prisma.googleConnection.update({
+      where: {
+        organizationId,
+      },
+      data: {
+        accessToken: refreshedCredentials.access_token,
+        tokenExpiresAt: refreshedCredentials.expiry_date
+          ? new Date(refreshedCredentials.expiry_date)
+          : connection.tokenExpiresAt,
+      },
+    });
+  }
+
+  return messages;
+}

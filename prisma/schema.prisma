@@ -138,6 +138,7 @@ model AIAction {
   invoiceId      String?
   type           AIActionType
   status         AIActionStatus @default(PENDING)
+  executionStartedAt DateTime?
   riskLevel      RiskLevel
   reason         String?
   recommendation String?

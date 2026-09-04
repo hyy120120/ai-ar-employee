@@ -61,7 +61,35 @@ export async function POST(
       );
     }
 
-    if (action.status !== "APPROVED") {
+    const lockedAction = await prisma.aIAction.updateMany({
+      where: {
+        id: action.id,
+        organizationId,
+        status: {
+          in: ["APPROVED", "FAILED"],
+        },
+        executionStartedAt: null,
+      },
+      data: {
+        executionStartedAt: new Date(),
+      },
+    });
+
+    if (lockedAction.count !== 1) {
+      return NextResponse.json(
+        {
+          status: "error",
+          message:
+            "This AI action is already being executed or was already executed.",
+        },
+        { status: 409 },
+      );
+    }
+
+    if (
+      action.status !== "APPROVED" &&
+      action.status !== "FAILED"
+    ) {
       return NextResponse.json(
         {
           status: "error",
@@ -127,12 +155,28 @@ export async function POST(
       );
     }
 
-    const gmailResult = await sendGmailEmail({
-      organizationId,
-      to: customerEmail,
-      subject,
-      body: emailBody,
-    });
+    let gmailResult;
+
+try {
+  gmailResult = await sendGmailEmail({
+    organizationId,
+    to: customerEmail,
+    subject,
+    body: emailBody,
+  });
+} catch (error) {
+  await prisma.aIAction.update({
+    where: {
+      id: action.id,
+    },
+    data: {
+      executionStartedAt: null,
+      status: "FAILED",
+    },
+  });
+
+  throw error;
+}
 
     const executedAction = await prisma.aIAction.update({
       where: {
