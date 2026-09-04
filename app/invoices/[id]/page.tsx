@@ -251,22 +251,24 @@ const emailAction =
             {latestInvestigation ? (
               <>
                 <h2>AI recommended action</h2>
-
+            
                 <p>{latestInvestigation.recommendedAction}</p>
-
+            
                 <p className="muted">
                   Risk: {latestInvestigation.riskLevel}
                 </p>
-
+            
                 <InvestigateButton invoiceId={invoice.id} />
               </>
             ) : (
               <>
-                <h2>No action yet</h2>
+                <h2>No investigation yet</h2>
+            
                 <p>
-                  The AI employee has not recommended an
-                  action for this invoice.
+                  The AI employee has not investigated this invoice yet.
                 </p>
+            
+                <InvestigateButton invoiceId={invoice.id} />
               </>
             )}
           </section>

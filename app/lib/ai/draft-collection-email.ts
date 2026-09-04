@@ -15,6 +15,10 @@ type CollectionEmailContext = {
     name: string;
     email: string | null;
   };
+  company: {
+  name: string;
+  phone: string | null;
+};
   investigation: {
     finding: string;
     recommendedAction: string;
@@ -60,8 +64,17 @@ Rules:
 - Do not claim that a payment was received unless the data says so.
 - Clearly reference the invoice number.
 - Be polite and professional.
+- If company.name is provided, sign the email with the company name.
+- If company.phone is provided, include the phone number below the company name.
+- Never use generic signatures such as "Accounts Receivable" when a company name is provided.
+- Never use placeholders such as [Your Company Name], [Contact Information], or [Company Name].
 - Ask for the specific next step described by the investigation.
 - Keep the email concise.
+- Use the provided company name in the email signature.
+- If a company phone number is provided, include it in the signature.
+- Never invent company contact information.
+- Do not include any sign-off or company signature in the body. The application will add the signature separately.
+- Do not include a company signature unless the company name and contact information are explicitly provided.
 - Return only the requested JSON structure.
         `.trim(),
       },
@@ -92,5 +105,12 @@ Rules:
     throw new Error("AI returned an incomplete collection email draft.");
   }
 
+   const signatureLines = ["Best regards,", context.company.name.trim()];
+
+if (context.company.phone?.trim()) {
+  signatureLines.push(context.company.phone.trim());
+}
+
+draft.body = `${draft.body.trim()}\n\n${signatureLines.join("\n")}`;
   return draft;
 }

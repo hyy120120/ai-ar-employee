@@ -22,6 +22,7 @@ export async function POST(
       },
       include: {
         customer: true,
+        organization: true,
         investigations: {
           orderBy: {
             createdAt: "desc",
@@ -70,10 +71,14 @@ export async function POST(
         dueDate: invoice.dueDate.toISOString(),
       },
       customer: {
-        name: invoice.customer.name,
-        email: invoice.customer.email,
-      },
-      investigation: {
+          name: invoice.customer.name,
+          email: invoice.customer.email,
+        },
+        company: {
+          name: invoice.organization.name,
+        phone: invoice.organization.phone,
+        },
+        investigation: {
         finding: investigation.finding,
         recommendedAction: investigation.recommendedAction,
         riskLevel: investigation.riskLevel,

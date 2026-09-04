@@ -49,6 +49,7 @@ enum RiskLevel {
 model Organization {
   id        String   @id @default(cuid())
   name      String
+  phone     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -58,6 +59,7 @@ model Organization {
   actions   AIAction[]
   auditLogs AuditLog[]
   googleConnection GoogleConnection?
+  quickBooksConnection QuickBooksConnection?
 }
 
 model User {
@@ -87,7 +89,7 @@ model Customer {
   invoices       Invoice[]
 
   @@index([organizationId])
-  @@index([organizationId, externalId])
+  @@unique([organizationId, externalId])
 }
 
 model Invoice {
@@ -112,6 +114,7 @@ model Invoice {
  investigations InvoiceInvestigation[]
 
   @@unique([organizationId, invoiceNumber])
+  @@unique([organizationId, externalId])
   @@index([organizationId])
   @@index([organizationId, status])
   @@index([customerId])
@@ -221,6 +224,23 @@ model GoogleConnection {
   updatedAt      DateTime @updatedAt
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model QuickBooksConnection {
+  id             String   @id @default(cuid())
+  organizationId String   @unique
+  realmId        String
+  accessToken    String?
+  refreshToken   String
+  tokenExpiresAt DateTime?
+  scope          String?
+  companyName    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
 }

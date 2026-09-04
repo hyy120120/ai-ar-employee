@@ -33,6 +33,13 @@ export default async function Home() {
   },
 });
 
+const quickBooksConnection =
+  await prisma.quickBooksConnection.findUnique({
+    where: {
+      organizationId: "seed-demo-organization",
+    },
+  });
+
   return (
     <main className="dashboard">
       <header className="dashboard-header">
@@ -55,6 +62,17 @@ export default async function Home() {
           </a>
         )}
         {googleConnection && <GmailTestButton />}
+
+        {quickBooksConnection ? (
+          <div className="connection-status">
+            <strong>✓ QuickBooks Connected</strong>
+            <span>{quickBooksConnection.companyName ?? "QuickBooks company connected"}</span>
+          </div>
+        ) : (
+          <a href="/api/auth/quickbooks" className="primary-button">
+            Connect QuickBooks
+          </a>
+        )}
       </header>
 
       <section className="metrics-grid">
