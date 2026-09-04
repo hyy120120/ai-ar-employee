@@ -111,6 +111,17 @@ if (context.company.phone?.trim()) {
   signatureLines.push(context.company.phone.trim());
 }
 
+const formattedDueDate = new Intl.DateTimeFormat("en-US", {
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+}).format(new Date(context.invoice.dueDate));
+
+draft.body = draft.body.replace(
+  context.invoice.dueDate,
+  formattedDueDate,
+);
+
 draft.body = `${draft.body.trim()}\n\n${signatureLines.join("\n")}`;
   return draft;
 }
