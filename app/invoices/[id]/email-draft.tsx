@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 type EmailDraftProps = {
@@ -23,6 +24,8 @@ export default function EmailDraft({
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [isSent, setIsSent] = useState(false);
+  const router = useRouter();
 
   async function handleGenerateDraft() {
     setIsLoading(true);
@@ -102,6 +105,8 @@ export default function EmailDraft({
       setSuccess(
         `Email sent successfully to ${data.email ?? customerEmail}.`,
       );
+      setIsSent(true);
+      router.refresh();
     } catch (error) {
       console.error("Email sending failed:", error);
 
@@ -141,12 +146,6 @@ export default function EmailDraft({
         </div>
       )}
 
-      {success && (
-        <div className="email-draft-success">
-          {success}
-        </div>
-      )}
-
       {draft && (
         <div className="email-draft-content">
           <div className="email-field">
@@ -168,6 +167,8 @@ export default function EmailDraft({
           </div>
 
           <div className="email-draft-actions">
+
+
             <button
               type="button"
               className="secondary-button"
@@ -181,11 +182,20 @@ export default function EmailDraft({
               type="button"
               className="primary-button"
               onClick={handleApproveAndSend}
-              disabled={isSending || !actionId}
+              disabled={isSending || !actionId || isSent}
             >
               {isSending ? "Sending..." : "Approve & Send"}
             </button>
           </div>
+
+          {isSent && (
+            <div className="email-draft-success">
+              <strong>✓ SENT SUCCESSFULLY</strong>
+              <span>
+                Email sent successfully to {customerEmail}
+              </span>
+            </div>
+          )}
 
           <p className="email-draft-note">
             Review the AI-generated message before sending.
