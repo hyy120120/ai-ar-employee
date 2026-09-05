@@ -156,6 +156,7 @@ model AIAction {
   @@index([organizationId])
   @@index([invoiceId])
   @@index([organizationId, status])
+   
 }
 
 model AuditLog {

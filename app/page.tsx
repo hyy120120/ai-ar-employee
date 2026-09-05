@@ -24,21 +24,39 @@ export default async function Home() {
   const { organization, invoices, pendingActions, metrics } =
     await getDashboardData();
 
-    const googleConnection = await prisma.googleConnection.findUnique({
-  where: {
-    organizationId: organization.id,
-  },
-  select: {
-    email: true,
-  },
-});
-
-const quickBooksConnection =
-  await prisma.quickBooksConnection.findUnique({
+  const recentActions = await prisma.aIAction.findMany({
     where: {
-      organizationId: "seed-demo-organization",
+      organizationId: organization.id,
+      status: "SENT",
+    },
+    include: {
+      invoice: {
+        include: {
+          customer: true,
+        },
+      },
+    },
+    orderBy: {
+      updatedAt: "desc",
+    },
+    take: 20,
+  });
+
+  const googleConnection = await prisma.googleConnection.findUnique({
+    where: {
+      organizationId: organization.id,
+    },
+    select: {
+      email: true,
     },
   });
+
+  const quickBooksConnection =
+    await prisma.quickBooksConnection.findUnique({
+      where: {
+        organizationId: "seed-demo-organization",
+      },
+    });
 
   return (
     <main className="dashboard">
@@ -46,9 +64,7 @@ const quickBooksConnection =
         <div>
           <p className="eyebrow">AI AR EMPLOYEE</p>
           <h1>Accounts Receivable</h1>
-          <p className="muted">
-            {organization.name}
-          </p>
+          <p className="muted">{organization.name}</p>
         </div>
 
         {googleConnection ? (
@@ -61,12 +77,16 @@ const quickBooksConnection =
             Connect Gmail
           </a>
         )}
+
         {googleConnection && <GmailTestButton />}
 
         {quickBooksConnection ? (
           <div className="connection-status">
             <strong>✓ QuickBooks Connected</strong>
-            <span>{quickBooksConnection.companyName ?? "QuickBooks company connected"}</span>
+            <span>
+              {quickBooksConnection.companyName ??
+                "QuickBooks company connected"}
+            </span>
           </div>
         ) : (
           <a href="/api/auth/quickbooks" className="primary-button">
@@ -78,7 +98,9 @@ const quickBooksConnection =
       <section className="metrics-grid">
         <div className="metric-card">
           <span>Total outstanding</span>
-          <strong>{formatCurrency(metrics.totalOutstanding)}</strong>
+          <strong>
+            {formatCurrency(metrics.totalOutstanding)}
+          </strong>
         </div>
 
         <div className="metric-card">
@@ -139,7 +161,9 @@ const quickBooksConnection =
                     </td>
 
                     <td>
-                      {formatCurrency(Number(invoice.balanceDue))}
+                      {formatCurrency(
+                        Number(invoice.balanceDue),
+                      )}
                     </td>
 
                     <td>
@@ -200,7 +224,61 @@ const quickBooksConnection =
           ))}
 
           {pendingActions.length === 0 && (
-            <p className="muted">No pending AI actions.</p>
+            <p className="muted">
+              No pending AI actions.
+            </p>
+          )}
+        </div>
+      </section>
+
+      <section className="dashboard-section">
+        <div className="section-header">
+          <div>
+            <h2>AI activity</h2>
+            <p className="muted">
+              Recently completed actions
+            </p>
+          </div>
+        </div>
+
+        <div className="actions-list">
+          {recentActions.map((action) => (
+            <div className="action-card" key={action.id}>
+              <div>
+                <strong>
+                  ✓ {action.type.replace("_", " ")} sent
+                </strong>
+
+                <p>
+                  {action.invoice?.customer.name} ·{" "}
+                  {action.invoice?.invoiceNumber}
+                </p>
+
+                <span className="muted">
+                 {action.updatedAt.toLocaleString("en-US")}
+               </span>
+
+                {action.invoice && (
+                  <span className="muted">
+                    $
+                    {Number(
+                      action.invoice.balanceDue,
+                    ).toFixed(2)}{" "}
+                    balance
+                  </span>
+                )}
+              </div>
+
+              <span className="status status-paid">
+                SENT
+              </span>
+            </div>
+          ))}
+
+          {recentActions.length === 0 && (
+            <p className="muted">
+              No completed AI actions yet.
+            </p>
           )}
         </div>
       </section>

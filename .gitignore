@@ -69,3 +69,4 @@ Thumbs.db
 # Local AI editor configuration
 .claude/
 .windsurf/
+.trigger

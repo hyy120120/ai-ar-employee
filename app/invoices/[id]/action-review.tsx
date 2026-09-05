@@ -1,6 +1,8 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+
 
 type ActionReviewProps = {
   actionId: string;
@@ -21,6 +23,7 @@ export default function ActionReview({
     "PENDING",
   );
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
 
   async function handleApprove() {
@@ -39,6 +42,8 @@ export default function ActionReview({
       }
 
       setStatus("APPROVED");
+      router.refresh();
+
     } catch (error) {
       console.error("AI action approval failed:", error);
 
@@ -68,6 +73,7 @@ export default function ActionReview({
       }
 
       setStatus("REJECTED");
+      router.refresh();
     } catch (error) {
       console.error("AI action rejection failed:", error);
 

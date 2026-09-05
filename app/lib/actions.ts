@@ -1,4 +1,5 @@
 import { prisma } from "@/app/lib/prisma";
+
 import type {
   AIActionStatus,
   AIActionType,
@@ -16,22 +17,46 @@ type CreateAIActionInput = {
   draftBody?: string;
 };
 
-export async function createAIAction(
-  input: CreateAIActionInput,
-) {
-  return prisma.aIAction.create({
-    data: {
+export async function createAIAction(input: CreateAIActionInput) {
+  const existingActiveAction = await prisma.aIAction.findFirst({
+    where: {
       organizationId: input.organizationId,
       invoiceId: input.invoiceId,
       type: input.type,
-      riskLevel: input.riskLevel,
-      reason: input.reason,
-      recommendation: input.recommendation,
-      draftSubject: input.draftSubject,
-      draftBody: input.draftBody,
-      status: "PENDING",
+      status: {
+        in: ["PENDING", "APPROVED"],
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
     },
   });
+
+  if (existingActiveAction) {
+  return {
+    action: existingActiveAction,
+    created: false,
+  };
+}
+
+const action = await prisma.aIAction.create({
+  data: {
+    organizationId: input.organizationId,
+    invoiceId: input.invoiceId,
+    type: input.type,
+    riskLevel: input.riskLevel,
+    reason: input.reason,
+     recommendation: input.recommendation,
+    draftSubject: input.draftSubject,
+    draftBody: input.draftBody,
+    status: "PENDING",
+  },
+});
+
+return {
+  action,
+  created: true,
+};
 }
 
 export async function getAIAction(
