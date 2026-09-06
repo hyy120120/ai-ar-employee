@@ -5,6 +5,7 @@ import { prisma } from "@/app/lib/prisma";
 import InvestigateButton from "./investigate-button";
 import EmailDraft from "./email-draft";
 import ActionReview from "./action-review";
+import PaymentPromiseSection from "@/app/components/PaymentPromiseSection";
 
 type InvoicePageProps = {
   params: Promise<{
@@ -48,24 +49,32 @@ export default async function InvoicePage({
       id,
     },
     include: {
-      customer: true,
-      payments: {
-        orderBy: {
-          paidAt: "desc",
-        },
-      },
-      actions: {
-        orderBy: {
-          createdAt: "desc",
-        },
-      },
-
-      investigations: {
-       orderBy: {
-         createdAt: "desc",
+       customer: true,
+     
+       payments: {
+         orderBy: {
+           paidAt: "desc",
+         },
+       },
+     
+       actions: {
+         orderBy: {
+           createdAt: "desc",
+         },
+       },
+     
+       investigations: {
+         orderBy: {
+           createdAt: "desc",
+         },
+       },
+     
+       paymentPromises: {
+         orderBy: {
+           promisedDate: "asc",
+         },
        },
      },
-    },
   });
 
   if (!invoice) {
@@ -231,6 +240,18 @@ const emailAction =
               </p>
             )}
           </section>
+          <PaymentPromiseSection
+            invoiceId={invoice.id}
+            promises={invoice.paymentPromises.map((promise) => ({
+              ...promise,
+              promisedAmount: Number(promise.promisedAmount),
+              confidence:
+                promise.confidence === null
+                  ? null
+                  : Number(promise.confidence),
+            }))}
+            balanceDue={balanceDue}
+          />
 
                {pendingAction && (
             <ActionReview
